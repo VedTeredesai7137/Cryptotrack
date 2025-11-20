@@ -632,6 +632,73 @@ Authorization: Bearer <token>
 - `404` - Asset not found
 - `500` - Server error
 
+### Interactive API Documentation
+
+#### Swagger/OpenAPI Documentation
+
+For interactive API testing and documentation, you can set up Swagger UI:
+
+**Installation:**
+```bash
+npm install swagger-ui-express swagger-jsdoc
+```
+
+**Setup (Optional Enhancement):**
+Create `pages/api/docs.js` for Swagger UI endpoint:
+```javascript
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'CryptoTrack API',
+      version: '1.0.0',
+      description: 'Cryptocurrency portfolio tracking API with RBAC',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000/api',
+        description: 'Development server',
+      },
+    ],
+  },
+  apis: ['./pages/api/**/*.js'], // Path to API files
+};
+
+const specs = swaggerJsdoc(options);
+export default swaggerUi.setup(specs);
+```
+
+**Access Swagger UI:**
+- Visit: `http://localhost:3000/api/docs`
+- Interactive API testing interface
+- Try endpoints directly in browser
+- Download OpenAPI specification
+
+#### Postman Collection
+
+**Import Collection:**
+1. Download the Postman collection: [CryptoTrack API Collection](./docs/CryptoTrack-API.postman_collection.json)
+2. Open Postman → Import → Upload the JSON file
+3. Set environment variables:
+   - `baseUrl`: `http://localhost:3000/api`
+   - `authToken`: Your JWT token after login
+
+**Collection Contents:**
+- ✅ Authentication endpoints (register, login)
+- ✅ Asset CRUD operations
+- ✅ Pre-configured request examples
+- ✅ Environment variables for easy testing
+- ✅ Test scripts for automated validation
+
+**Quick Test Workflow:**
+1. Run `POST /auth/register` to create account
+2. Run `POST /auth/login` to get JWT token
+3. Token automatically saved to environment
+4. Test protected endpoints with authentication
+
 ---
 
 ## 🔐 Authentication & Authorization
@@ -885,6 +952,327 @@ The `COINGECKO_IDS` and `TICKER_TO_ID` are automatically generated from this arr
 
 ---
 
+## 📈 Scalability & Performance
+
+### Current Architecture Scalability
+
+The application is designed with scalability in mind using modern patterns:
+
+#### Horizontal Scaling Strategies
+
+**1. Microservices Architecture (Future Enhancement)**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Auth Service  │    │  Asset Service  │    │  Price Service  │
+│   (Users/JWT)   │    │   (Portfolio)   │    │  (CoinGecko)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   API Gateway   │
+                    │   (Load Balancer)│
+                    └─────────────────┘
+```
+
+**Benefits:**
+- Independent service scaling
+- Technology diversity per service
+- Fault isolation
+- Team autonomy
+
+**2. Database Scaling**
+
+**Read Replicas:**
+```javascript
+// MongoDB replica set configuration
+const mongoOptions = {
+  readPreference: 'secondaryPreferred',
+  replicaSet: 'cryptotrack-replica-set'
+};
+```
+
+**Sharding Strategy:**
+- Shard by user ID for user data
+- Shard by asset ticker for price data
+- Geographic sharding for global users
+
+**3. Caching Implementation**
+
+**Redis Caching Layer:**
+```javascript
+// Price caching example
+const redis = require('redis');
+const client = redis.createClient();
+
+async function getCachedPrices() {
+  const cached = await client.get('crypto-prices');
+  if (cached) return JSON.parse(cached);
+  
+  const prices = await fetchFromCoinGecko();
+  await client.setex('crypto-prices', 300, JSON.stringify(prices)); // 5min cache
+  return prices;
+}
+```
+
+**Application-Level Caching:**
+- API response caching
+- Database query result caching
+- Static asset caching with CDN
+
+#### Load Balancing Strategies
+
+**1. Application Load Balancer**
+```yaml
+# docker-compose.prod.yml
+version: '3.8'
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app1
+      - app2
+      - app3
+
+  app1:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - INSTANCE_ID=app1
+
+  app2:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - INSTANCE_ID=app2
+
+  app3:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - INSTANCE_ID=app3
+```
+
+**2. Database Connection Pooling**
+```javascript
+// lib/db.js enhancement
+const mongoose = require('mongoose');
+
+const dbConnect = async () => {
+  if (mongoose.connections[0].readyState) return;
+  
+  await mongoose.connect(process.env.MONGODB_URI, {
+    maxPoolSize: 10, // Maximum connections
+    minPoolSize: 2,  // Minimum connections
+    maxIdleTimeMS: 30000,
+    serverSelectionTimeoutMS: 5000,
+  });
+};
+```
+
+#### Performance Optimizations
+
+**1. API Response Optimization**
+```javascript
+// Pagination implementation
+app.get('/api/assets', async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = (page - 1) * limit;
+
+  const assets = await Asset.find({ owner: userId })
+    .skip(skip)
+    .limit(limit)
+    .lean(); // Faster queries without Mongoose overhead
+
+  res.json({
+    assets,
+    pagination: {
+      page,
+      limit,
+      total: await Asset.countDocuments({ owner: userId })
+    }
+  });
+});
+```
+
+**2. Database Indexing Strategy**
+```javascript
+// models/Asset.js
+const assetSchema = new mongoose.Schema({
+  ticker: { type: String, required: true, index: true },
+  owner: { type: ObjectId, ref: 'User', required: true, index: true },
+  createdAt: { type: Date, default: Date.now, index: true }
+});
+
+// Compound indexes for common queries
+assetSchema.index({ owner: 1, ticker: 1 });
+assetSchema.index({ owner: 1, createdAt: -1 });
+```
+
+**3. Frontend Performance**
+```javascript
+// Next.js optimizations
+module.exports = {
+  // Image optimization
+  images: {
+    domains: ['api.coingecko.com'],
+    formats: ['image/webp', 'image/avif'],
+  },
+  
+  // Bundle optimization
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react'],
+  },
+  
+  // Compression
+  compress: true,
+};
+```
+
+#### Monitoring & Observability
+
+**1. Application Metrics**
+```javascript
+// Basic monitoring setup
+const prometheus = require('prom-client');
+
+const httpRequestDuration = new prometheus.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+});
+
+// Middleware to track metrics
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpRequestDuration
+      .labels(req.method, req.route?.path || req.path, res.statusCode)
+      .observe(duration);
+  });
+  next();
+});
+```
+
+**2. Health Checks**
+```javascript
+// pages/api/health.js
+export default function handler(req, res) {
+  const healthCheck = {
+    uptime: process.uptime(),
+    message: 'OK',
+    timestamp: Date.now(),
+    checks: {
+      database: 'connected', // Check MongoDB connection
+      external_api: 'operational', // Check CoinGecko API
+      memory: process.memoryUsage(),
+    }
+  };
+  
+  res.status(200).json(healthCheck);
+}
+```
+
+#### Cloud Deployment Strategies
+
+**1. Container Orchestration (Kubernetes)**
+```yaml
+# k8s-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cryptotrack-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cryptotrack
+  template:
+    metadata:
+      labels:
+        app: cryptotrack
+    spec:
+      containers:
+      - name: cryptotrack
+        image: vedteredesai/cryptotrack:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: cryptotrack-secrets
+              key: mongodb-uri
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+```
+
+**2. Auto-scaling Configuration**
+```yaml
+# k8s-hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cryptotrack-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cryptotrack-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+```
+
+#### Future Scalability Enhancements
+
+**Short-term (3-6 months):**
+- [ ] Implement Redis caching for API responses
+- [ ] Add database read replicas
+- [ ] Set up CDN for static assets
+- [ ] Implement API rate limiting
+- [ ] Add comprehensive logging with ELK stack
+
+**Medium-term (6-12 months):**
+- [ ] Migrate to microservices architecture
+- [ ] Implement event-driven architecture with message queues
+- [ ] Add real-time features with WebSocket clustering
+- [ ] Implement advanced monitoring with Grafana/Prometheus
+- [ ] Set up automated testing and CI/CD pipelines
+
+**Long-term (12+ months):**
+- [ ] Multi-region deployment
+- [ ] Advanced ML-based auto-scaling
+- [ ] Implement CQRS pattern for read/write separation
+- [ ] Add blockchain integration for DeFi features
+- [ ] Implement advanced security with zero-trust architecture
+
+---
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -977,6 +1365,17 @@ console.log('JWT Secret exists:', !!process.env.JWT_SECRET);
 - Docker and Docker Compose installed
 - At least 2GB RAM available
 - Port 3000 and 27017 available
+
+#### Quick Start with Docker Hub
+
+**Pull and run the pre-built image:**
+```bash
+# Pull from Docker Hub
+docker pull vedteredesai/cryptotrack:latest
+
+# Run the pulled image
+docker run -p 3000:3000 vedteredesai/cryptotrack:latest
+```
 
 #### Quick Start with Docker Compose
 
