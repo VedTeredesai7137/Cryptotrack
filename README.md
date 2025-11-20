@@ -38,7 +38,7 @@ The application follows a modular architecture with clear separation between Mod
 ## 📸 Screenshots
 
 ### Home Page
-![Home Page](https://drive.google.com/uc?export=view&id=1Lxj3C_KicvCFJ3gdh3T9XY9sHXHvujjU)
+![Home Page](https://drive.google.com/file/d/1Lxj3C_KicvCFJ3gdh3T9XY9sHXHvujjU/view?usp=sharing)
 
 ### User Dashboard
 ![User Dashboard](https://drive.google.com/uc?export=view&id=1sgzi11d1QUEQ-cNljiHqYCVBLq3QS3X5)
@@ -234,9 +234,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 | Variable | Description | Required | Example |
 |----------|-------------|----------|---------|
-| `MONGODB_URI` | MongoDB connection string | ✅ Yes | `mongodb://localhost:27017/cryptotrack` |
-| `JWT_SECRET` | Secret key for JWT token signing (min 32 chars) | ✅ Yes | `your_super_secret_jwt_key_here` |
-| `NEXT_PUBLIC_CRPYTOGETO` | CoinGecko API key (demo or pro) | ⚠️ Optional | `CG-psJNwSECjjPsCjKvfdU2Wtvf` |
+| `MONGODB_URI` | MongoDB connection string |  Yes | `mongodb://localhost:27017/cryptotrack` |
+| `JWT_SECRET` | Secret key for JWT token signing (min 32 chars) |  Yes | `your_super_secret_jwt_key_here` |
+| `NEXT_PUBLIC_CRPYTOGETO` | CoinGecko API key (demo or pro) | Yes | `CG-fhgkfdhgfg` |
 
 ### MongoDB Connection String Formats
 
@@ -301,26 +301,40 @@ MONGODB_URI=mongodb://username:password@localhost:27017/cryptotrack?authSource=a
 
 ### Creating an Admin User
 
-To create an admin user, you can:
+To create an admin user, you can use the following methods:
 
-1. **Via MongoDB Shell:**
+#### Default Admin Credentials
+For testing and initial setup, use these credentials:
+- **Email**: `admin@cryptotrack.com`
+- **Password**: `admin123`
+
+#### Method 1: Via MongoDB Shell
 ```javascript
 use cryptotrack
 db.users.insertOne({
   username: "admin",
-  email: "admin@example.com",
-  password: "$2a$10$hashedPasswordHere", // Use bcrypt hash
+  email: "admin@cryptotrack.com",
+  password: "$2a$10$hashedPasswordHere", // Use bcrypt hash of 'admin123'
   role: "admin",
   createdAt: new Date(),
   updatedAt: new Date()
 })
 ```
 
-2. **Via Registration API** (then manually update role in database)
-
-3. **Via Script** (create `scripts/createAdmin.js`):
+#### Method 2: Via Registration API
+1. Register normally with email `admin@cryptotrack.com`
+2. Manually update the role in database:
 ```javascript
-// scripts/createAdmin.js
+db.users.updateOne(
+  { email: "admin@cryptotrack.com" },
+  { $set: { role: "admin" } }
+)
+```
+
+#### Method 3: Via Script (Recommended)
+Use the provided script `scripts/create-admin.mjs`:
+```javascript
+// scripts/create-admin.mjs
 import { dbConnect } from '../lib/db.js';
 import User from '../models/User.js';
 import { hashPassword } from '../lib/auth.js';
@@ -329,10 +343,16 @@ await dbConnect();
 const hashedPassword = await hashPassword('admin123');
 await User.create({
   username: 'admin',
-  email: 'admin@example.com',
+  email: 'admin@cryptotrack.com',
   password: hashedPassword,
   role: 'admin'
 });
+console.log('Admin user created successfully!');
+```
+
+Run the script:
+```bash
+node scripts/create-admin.mjs
 ```
 
 ---
@@ -824,6 +844,11 @@ The `COINGECKO_IDS` and `TICKER_TO_ID` are automatically generated from this arr
    - Passwords are never stored in plain text
    - bcryptjs with 10 salt rounds
    - Minimum password complexity (can be enhanced)
+   
+   **MongoDB Collection Example:**
+   ![Password Hashing in MongoDB](https://drive.google.com/uc?export=view&id=1mxgHcErNNZ_EDQb4zOAkQA71Vkf3z0hO)
+   
+   *Screenshot showing successful password hashing in MongoDB collection - passwords are stored as bcrypt hashes, never in plain text.*
 
 2. **JWT Security**
    - Tokens expire after 7 days
