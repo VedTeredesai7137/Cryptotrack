@@ -201,7 +201,7 @@ Add the following environment variables (see [Configuration](#configuration) for
 ```env
 MONGODB_URI=mongodb://localhost:27017/cryptotrack
 JWT_SECRET=your_super_secret_jwt_key_min_32_characters_long
-NEXT_PUBLIC_CRPYTOGETO=CG-psJNwSECjjPsCjKvfdU2Wtvf
+NEXT_PUBLIC_CRPYTOGETO=your_coingecko_api_key_here
 ```
 
 ### Step 4: Database Setup
@@ -786,7 +786,7 @@ The application automatically detects the API key type:
 ### Request Example
 
 ```javascript
-GET https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,solana,cardano,avalanche-2,polkadot&vs_currencies=usd&x_cg_demo_api_key=CG-psJNwSECjjPsCjKvfdU2Wtvf
+GET https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,solana,cardano,avalanche-2,polkadot&vs_currencies=usd&x_cg_demo_api_key=your_coingecko_api_key_here
 ```
 
 ### Response Format
@@ -971,7 +971,120 @@ console.log('JWT Secret exists:', !!process.env.JWT_SECRET);
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended)
+### Docker Deployment (Recommended for Production)
+
+#### Prerequisites
+- Docker and Docker Compose installed
+- At least 2GB RAM available
+- Port 3000 and 27017 available
+
+#### Quick Start with Docker Compose
+
+1. **Clone and navigate to the project:**
+```bash
+git clone <your-repository-url>
+cd cryptotrack
+```
+
+2. **Create environment file:**
+```bash
+cp .env.docker .env.local
+# Edit .env.local with your actual values
+```
+
+3. **Build and start all services:**
+```bash
+# Start the application with MongoDB
+docker-compose up -d
+
+# Or with MongoDB Admin interface
+docker-compose --profile admin up -d
+```
+
+4. **Access the application:**
+- **CryptoTrack App**: http://localhost:3000
+- **MongoDB Admin** (if enabled): http://localhost:8081
+  - Username: `admin`
+  - Password: `admin123`
+
+#### Docker Commands
+
+**Build the application:**
+```bash
+docker build -t cryptotrack .
+```
+
+**Run the container:**
+```bash
+docker run -p 3000:3000 \
+  -e MONGODB_URI="mongodb://host.docker.internal:27017/cryptotrack" \
+  -e JWT_SECRET="your_secret_key_here" \
+  -e NEXT_PUBLIC_CRPYTOGETO="your_coingecko_api_key" \
+  cryptotrack
+```
+
+**View logs:**
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f cryptotrack
+```
+
+**Stop services:**
+```bash
+docker-compose down
+
+# Remove volumes (WARNING: This deletes all data)
+docker-compose down -v
+```
+
+#### Production Docker Setup
+
+For production deployment, create a `docker-compose.prod.yml`:
+
+```yaml
+version: '3.8'
+services:
+  cryptotrack:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - NEXT_PUBLIC_CRPYTOGETO=${NEXT_PUBLIC_CRPYTOGETO}
+    restart: always
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7.0
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+
+volumes:
+  mongo_data:
+```
+
+#### Docker Features
+
+- **Multi-stage build** for optimized image size
+- **Non-root user** for security
+- **Standalone output** for minimal runtime dependencies
+- **Health checks** and automatic restarts
+- **Volume persistence** for MongoDB data
+- **Network isolation** between services
+
+---
+
+### Vercel Deployment
 
 1. **Push to GitHub:**
 ```bash
