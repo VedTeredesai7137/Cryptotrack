@@ -12,12 +12,14 @@ out/
 build/
 dist/
 
-# Environment variables
+# Environment variables (exclude all except production)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.docker
+# Keep .env.production for Docker builds
 
 # IDE and editor files
 .vscode/

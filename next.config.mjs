@@ -6,11 +6,8 @@ const nextConfig = {
   // Enable standalone output for Docker optimization
   output: 'standalone',
   
-  // Optimize for production
-  experimental: {
-    // Enable output file tracing to reduce bundle size
-    outputFileTracingRoot: process.cwd(),
-  },
+  // Enable output file tracing to reduce bundle size (moved from experimental)
+  outputFileTracingRoot: process.cwd(),
 };
 
 export default nextConfig;
