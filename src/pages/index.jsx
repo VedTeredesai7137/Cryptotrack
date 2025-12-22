@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react';
 import { Shield, TrendingUp, Zap, BarChart3 } from 'lucide-react';
 
 const COINGECKO_IDS = ['bitcoin', 'ethereum', 'solana'];
-const COINGECKO_API_KEY =
-  process.env.NEXT_PUBLIC_CRPYTOGETO || process.env.CrpytoGeto || undefined;
 
 function LiveMarketStrip() {
   const [prices, setPrices] = useState({});
@@ -14,16 +12,9 @@ function LiveMarketStrip() {
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        let url = `https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_IDS.join(
+        const url = `/api/prices?ids=${COINGECKO_IDS.join(
           ','
-        )}&vs_currencies=usd&include_24hr_change=true`;
-
-        if (COINGECKO_API_KEY) {
-          const apiKeyParam = COINGECKO_API_KEY.startsWith('CG-')
-            ? `x_cg_demo_api_key=${COINGECKO_API_KEY}`
-            : `x_cg_pro_api_key=${COINGECKO_API_KEY}`;
-          url += `&${apiKeyParam}`;
-        }
+        )}&include_24hr_change=true`;
 
         const response = await fetch(url);
         if (!response.ok) {
@@ -108,9 +99,9 @@ export default function HomePage() {
     <div className="w-full">
       {/* Hero Section */}
       <section className="mx-auto w-full max-w-6xl px-4 py-20 text-center">
-      <h1 className="mb-6 text-6xl font-bold tracking-tight text-emerald-400 md:text-7xl lg:text-8xl">
-       CryptoTrack
-      </h1>
+        <h1 className="mb-6 text-6xl font-bold tracking-tight text-emerald-400 md:text-7xl lg:text-8xl">
+          CryptoTrack
+        </h1>
         <p className="mx-auto mb-8 max-w-2xl text-xl text-slate-300 md:text-2xl">
           Real-time portfolio management with RBAC security
         </p>

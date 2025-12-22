@@ -16,8 +16,6 @@ const TICKER_TO_ID = CRYPTO_OPTIONS.reduce((acc, crypto) => {
   acc[crypto.ticker] = crypto.id;
   return acc;
 }, {});
-const COINGECKO_API_KEY =
-  process.env.NEXT_PUBLIC_CRPYTOGETO || process.env.CrpytoGeto || undefined;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -60,7 +58,7 @@ export default function DashboardPage() {
 
     setToken(storedToken);
     setTokenChecked(true);
-    
+
     // Decode token to get user info
     try {
       const payload = JSON.parse(atob(storedToken.split('.')[1]));
@@ -69,7 +67,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Failed to decode token:', err);
     }
-    
+
     fetchAssets(storedToken);
   }, [router, isClient]);
 
@@ -104,18 +102,7 @@ export default function DashboardPage() {
     setLivePriceLoading(true);
 
     try {
-      let url = `https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_IDS.join(
-        ','
-      )}&vs_currencies=usd`;
-
-      // Add API key as query parameter (CoinGecko requires it as query param, not header)
-      if (COINGECKO_API_KEY) {
-        // Determine if it's a demo key (starts with CG-) or pro key
-        const apiKeyParam = COINGECKO_API_KEY.startsWith('CG-')
-          ? `x_cg_demo_api_key=${COINGECKO_API_KEY}`
-          : `x_cg_pro_api_key=${COINGECKO_API_KEY}`;
-        url += `&${apiKeyParam}`;
-      }
+      const url = `/api/prices?ids=${COINGECKO_IDS.join(',')}`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -139,12 +126,12 @@ export default function DashboardPage() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    
+
     // Auto-fill name when ticker is selected
     if (name === 'ticker') {
       const selectedCrypto = CRYPTO_OPTIONS.find(crypto => crypto.ticker === value);
-      setForm((prev) => ({ 
-        ...prev, 
+      setForm((prev) => ({
+        ...prev,
         [name]: value,
         name: selectedCrypto ? selectedCrypto.name : prev.name
       }));

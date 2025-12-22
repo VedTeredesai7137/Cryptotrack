@@ -1,136 +1,113 @@
-# Dependencies
+# =========================
+# Node / Package Managers
+# =========================
 node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Next.js build output
-.next/
-out/
+# =========================
+# Next.js / Build Outputs
+# =========================
+.next
+out
+dist
+build
 
-# Production build files
-build/
-dist/
-
-# Environment variables (exclude all except production)
+# =========================
+# Environment Files
+# =========================
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
 .env.production.local
 .env.docker
-# Keep .env.production for Docker builds
 
-# IDE and editor files
-.vscode/
-.idea/
+# NOTE:
+# .env.production is NOT ignored
+# because Docker runtime may use --env-file
+
+# =========================
+# Logs & Runtime Artifacts
+# =========================
+logs
+*.log
+pids
+*.pid
+*.pid.lock
+*.seed
+
+# =========================
+# Coverage & Testing
+# =========================
+coverage
+.nyc_output
+__tests__
+**/*.test.*
+**/*.spec.*
+
+# =========================
+# IDE / Editor Files
+# =========================
+.vscode
+.idea
 *.swp
 *.swo
 *~
 
-# OS generated files
+# =========================
+# OS Junk
+# =========================
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
 Thumbs.db
+ehthumbs.db
 
-# Logs
-logs
-*.log
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
+# =========================
+# Caches
+# =========================
 .npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
+.eslintcache
+.node_repl_history
 
-# next.js build output
-.next
-
-# nuxt.js build output
+# =========================
+# Framework leftovers
+# =========================
 .nuxt
-
-# vuepress build output
 .vuepress/dist
-
-# Serverless directories
 .serverless
+.fusebox
+.dynamodb
 
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
+# =========================
 # Temporary folders
-tmp/
-temp/
+# =========================
+tmp
+temp
 
+# =========================
 # Git
+# =========================
 .git
 .gitignore
 
-# Docker
-Dockerfile*
+# =========================
+# Docker meta files (optional)
+# =========================
 docker-compose*
-.dockerignore
+Dockerfile*
 
-# README and documentation
+# =========================
+# Docs
+# =========================
 README.md
 *.md
-
-# Test files
-__tests__/
-**/*.test.js
-**/*.test.jsx
-**/*.test.ts
-**/*.test.tsx
-**/*.spec.js
-**/*.spec.jsx
-**/*.spec.ts
-**/*.spec.tsx
-
-# Storybook
-.storybook/
-storybook-static/
-
-# Local development files
-.env.example

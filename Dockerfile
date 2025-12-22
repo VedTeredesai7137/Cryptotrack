@@ -1,56 +1,57 @@
-# Use Node.js 20 Alpine as base image (required for Next.js 16+)
-FROM node:20-alpine
+# =========================
+# 1️⃣ Dependencies Stage
+# =========================
+FROM node:20-alpine AS deps
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache libc6-compat curl
+RUN apk add --no-cache libc6-compat
 
-# Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Install all dependencies (including dev dependencies for build)
-RUN npm ci && npm cache clean --force
 
-# Copy application code
+# =========================
+# 2️⃣ Build Stage
+# =========================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Copy production environment file and entrypoint script
-COPY .env.production .env.production
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Set default environment variables
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV HOSTNAME="0.0.0.0"
 
-# Load environment variables and build the application
-RUN export $(cat .env.production | grep -v '^#' | grep -v '^$' | xargs) && npm run build
+# Build happens INSIDE Docker as requested
+RUN npm run build
 
-# Remove dev dependencies after build to reduce image size
-RUN npm prune --production
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# =========================
+# 3️⃣ Runtime Stage
+# =========================
+FROM node:20-alpine AS runner
 
-# Change ownership of app directory
-RUN chown -R nextjs:nodejs /app
+WORKDIR /app
 
-# Switch to non-root user
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
+# Create non-root user
+RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
+
+# Copy only the minimal runtime output
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
 USER nextjs
 
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
-
-# Set entrypoint to load environment variables
-ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
