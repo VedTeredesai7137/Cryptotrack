@@ -1,6 +1,6 @@
 # CryptoTrack 
 
-A full-stack cryptocurrency watchlist tracker application built with Next.js, featuring Role-Based Access Control (RBAC), real-time price tracking via CoinGecko API, comprehensive portfolio management, and advanced admin controls.
+A full-stack cryptocurrency watchlist tracker application built with Next.js,a featuring Role-Based Access Control (RBAC), real-time price tracking via CoinGecko API, comprehensive portfolio management, and advanced admin controls.
 
 ## 📋 Table of Contents
 
